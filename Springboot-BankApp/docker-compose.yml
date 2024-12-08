@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: Test@123
+      MYSQL_DATABASE: bankappdb
+    ports:
+      - 3306:3306
+    networks:
+      - bank-app
+    volumes:
+      - mysql-volume:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","-uroot","-pTest@123"]
+      retries: 10
+      interval: 10s
+      start_period: 60s
+      timeout: 20s
+
+  bankapp:
+    container_name: bank-app #image: bank-app-mini:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile 
+    environment:
+      - SPRING_DATASOURCE_PASSWORD:Test@123
+      - SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/bankappdb?useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME:root  
+    ports:
+      - 8080:8080
+    networks:
+      - bank-app
+    restart: always
+    command: ["java", "-jar", "/app/bankapp.jar"]
+    healthcheck:
+      test: ["CMD-SHELL","curl -f http://localhost:8080/"]
+      retries: 10
+      interval: 10s
+      start_period: 60s
+      timeout: 20s
+
+networks:
+  bank-app:
+
+volumes:
+  mysql-volume:
+
