@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  mysql:
+    container_name: mysql
+    ports: 
+      - 3306:3306
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: mydb
+    networks:
+      - two-tier
+    restart: always
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","localhost","-uroot","-padmin"]
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+      interval: 10s
+
+  
+  flask-app:
+    container_name: flask-app
+    ports:
+      - 5000:5000
+    build:
+      context: . #building image contax used which will pick docker file from current directory so . used
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: admin
+      MYSQL_DB: mydb
+    networks:
+      - two-tier
+    depends_on: # flask app is depends on mysql once mysql container created then only flask app create its container
+      - mysql
+    volumes:
+      - flask-app-data:/app #working direct will used for voulmn
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL","curl -f http://localhost:5000/"]
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+      interval: 10s
+
+networks:
+  two-tier:
+volumes:
+  mysql-data:
+  flask-app-data:
